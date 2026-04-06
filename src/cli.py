@@ -1,6 +1,8 @@
 from pathlib import Path
 import typer
-from . import __app_name__, __version__, ERRORS, config, database
+from . import __app_name__, __version__, ERRORS
+from . import config, database, notes_manager
+
 
 app = typer.Typer(no_args_is_help=True, suggest_commands=True)
 
@@ -31,6 +33,22 @@ def init(
         typer.secho(f"The notes database is {db_path}", fg=typer.colors.GREEN)
 
 
+def get_notes_manager() -> notes_manager.Notes_Manager:
+    if config.CONFIG_FILE_PATH.exists():
+        db_path = database.get_database_path(config.CONFIG_FILE_PATH)
+    else:
+        typer.secho(
+            'Config file not found. Please, run "src init',
+             fg=typer.colors.RED
+        )
+        raise typer.Exit(1)
+    if db_path.exists():
+        return notes_manager.Notes_Manager(db_path)
+    else:
+        typer.secho('Database not found. Please, run "src init"',
+        fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
 
 
 def _version_callback(value: bool) -> None:
@@ -56,7 +74,7 @@ notes = []
 
 @app.command("add")
 def add_note(title: str = typer.Option(..., "--title", help="the title for a note"), 
-             context: str = typer.Option(..., "--desc", help="the description for a note"), 
+             context: str = typer.Option(..., "--content", help="the content for a note"), 
              tags: str | None = typer.Option(None, '--tags', help="tags")):
     
     pass
@@ -70,7 +88,7 @@ def delete_note(title: str | None = typer.Option(None, '--title', help='Delete b
 def update_note(title: str | None = typer.Option(None, '--title', help='Update by name'),
                 id: str | None = typer.Option(None, '--id', help='Update by ID'),
                 new_title: str | None = typer.Option(None, '--new_title', help='New title'),
-                new_description: str | None = typer.Option(None, '--new_desc', help='New description')):
+                new_content: str | None = typer.Option(None, '--new_content', help='New content')):
     pass
 
 @app.command('find')
@@ -85,3 +103,4 @@ def get_all():
 
 if __name__ == '__main__':
     app()
+
