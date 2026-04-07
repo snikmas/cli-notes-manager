@@ -3,6 +3,7 @@ import pytest
 import json
 
 from src import __app_name__, __version__, cli, SUCCESS
+from src import config
 from src.notes_manager import Notes_Manager
 
 runner = CliRunner()
@@ -51,3 +52,60 @@ def test_add(mock_json_file, title, content, tags):
     assert result.error == SUCCESS
     read = not_mgr._db_handler.read_notes()
     assert len(read.notes_list) == 2
+
+
+def test_cli_add_with_tags(tmp_path, monkeypatch):
+    db_file = tmp_path / "notes.json"
+    db_file.write_text("[]")
+
+    config_file = tmp_path / "config.ini"
+    config_file.write_text(f"[General]\ndatabase = {db_file}\n")
+    monkeypatch.setattr(config, "CONFIG_FILE_PATH", config_file)
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "add",
+            "--title",
+            "CLI note",
+            "--content",
+            "created from test",
+            "--tags",
+            "python",
+            "--tags",
+            "testing,cli",
+        ],
+    )
+
+    assert result.exit_code == 0
+    saved_notes = json.loads(db_file.read_text())
+    assert len(saved_notes) == 1
+    assert saved_notes[0]["tags"] == ["python", "testing", "cli"]
+
+
+def test_cli_init_then_add(tmp_path, monkeypatch):
+    config_dir = tmp_path / "config"
+    config_file = config_dir / "config.ini"
+    db_file = tmp_path / "notes.json"
+
+    monkeypatch.setattr(config, "CONFIG_DIR_PATH", config_dir)
+    monkeypatch.setattr(config, "CONFIG_FILE_PATH", config_file)
+
+    init_result = runner.invoke(
+        cli.app,
+        ["init", "--db-path", str(db_file)],
+    )
+
+    assert init_result.exit_code == 0
+    assert config_file.exists()
+    assert db_file.exists()
+
+    add_result = runner.invoke(
+        cli.app,
+        ["add", "--title", "Integrated", "--content", "flow works"],
+    )
+
+    assert add_result.exit_code == 0
+    saved_notes = json.loads(db_file.read_text())
+    assert len(saved_notes) == 1
+    assert saved_notes[0]["title"] == "Integrated."

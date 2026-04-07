@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, List, NamedTuple
 import configparser
 from pathlib import Path
+import logging
 
 from . import DB_WRITE_ERROR, SUCCESS, DB_READ_ERROR, JSON_ERROR
 

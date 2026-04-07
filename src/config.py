@@ -11,7 +11,7 @@ CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
 def init_app(db_path: str) -> int:
     # init the app
     config_code = _init_config_file()
-    if config_code is SUCCESS:
+    if config_code != SUCCESS:
         return config_code
     database_code = _create_database(db_path)
     if database_code != SUCCESS:
@@ -20,7 +20,7 @@ def init_app(db_path: str) -> int:
 
 def _init_config_file() -> int:
     try:
-        CONFIG_DIR_PATH.mkdir(exist_ok=True)
+        CONFIG_DIR_PATH.mkdir(parents=True, exist_ok=True)
     except OSError:
         return DIR_ERROR
     try:

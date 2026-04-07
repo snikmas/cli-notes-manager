@@ -56,6 +56,18 @@ def _version_callback(value: bool) -> None:
         typer.echo(f"{__app_name__} v{__version__}")
         raise typer.Exit()
 
+
+def _normalize_tags(tags: list[str] | None) -> list[str]:
+    if not tags:
+        return []
+
+    normalized_tags: list[str] = []
+    for tag in tags:
+        normalized_tags.extend(
+            part.strip() for part in tag.split(",") if part.strip()
+        )
+    return normalized_tags
+
 @app.callback()
 def main(
     version: bool | None = typer.Option(
@@ -74,10 +86,25 @@ notes = []
 
 @app.command("add")
 def add_note(title: str = typer.Option(..., "--title", help="the title for a note"), 
-             context: str = typer.Option(..., "--content", help="the content for a note"), 
-             tags: str | None = typer.Option(None, '--tags', help="tags")):
-    
-    pass
+             content: str = typer.Option(..., "--content", help="the content for a note"), 
+             tags: list[str] | None = typer.Option(None, '--tags', help="Repeat for multiple tags or use comma-separated values")):
+    not_mng = get_notes_manager()
+    note, error = not_mng.add(title, content, _normalize_tags(tags))
+    if error:
+        typer.secho(
+            f"Error during adding: {ERRORS.get(error, error)}",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
+    else:
+        typer.secho(f'''
+    ID: {note['id']}
+    Title: {note['title']}
+    Content: {note['content']}
+    Tags: {note['tags']}
+    Created_at: {note['created_at']}
+''', fg=typer.colors.GREEN)
+
 
 @app.command("delete")
 def delete_note(title: str | None = typer.Option(None, '--title', help='Delete by title'),
@@ -103,4 +130,3 @@ def get_all():
 
 if __name__ == '__main__':
     app()
-
