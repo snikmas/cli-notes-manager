@@ -2,6 +2,9 @@ from pathlib import Path
 import typer
 from . import __app_name__, __version__, ERRORS
 from . import config, database, notes_manager
+import logging 
+
+logging.basicConfig(level=logging.INFO)
 
 
 app = typer.Typer(no_args_is_help=True, suggest_commands=True)
@@ -57,16 +60,12 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-def _normalize_tags(tags: list[str] | None) -> list[str]:
+def _normalize_tags(tags: str | None) -> list[str]:
     if not tags:
         return []
-
-    normalized_tags: list[str] = []
-    for tag in tags:
-        normalized_tags.extend(
-            part.strip() for part in tag.split(",") if part.strip()
-        )
-    return normalized_tags
+    tags = tags.split(' ')
+    
+    return tags
 
 @app.callback()
 def main(
@@ -87,7 +86,7 @@ notes = []
 @app.command("add")
 def add_note(title: str = typer.Option(..., "--title", help="the title for a note"), 
              content: str = typer.Option(..., "--content", help="the content for a note"), 
-             tags: list[str] | None = typer.Option(None, '--tags', help="Repeat for multiple tags or use comma-separated values")):
+             tags: str | None = typer.Option(None, '--tags', help="Repeat for multiple tags or use comma-separated values")):
     not_mng = get_notes_manager()
     note, error = not_mng.add(title, content, _normalize_tags(tags))
     if error:
@@ -108,8 +107,14 @@ def add_note(title: str = typer.Option(..., "--title", help="the title for a not
 
 @app.command("delete")
 def delete_note(title: str | None = typer.Option(None, '--title', help='Delete by title'),
-                d: str | None = typer.Option(None, '--id', help='Delete by ID')):
-    pass
+                id: str | None = typer.Option(None, '--id', help='Delete by ID')):
+    
+    if (title and id):
+        typer.secho(f"Error during command: you must write only title OR id note!", fg=typer.colors.RED)
+        raise typer.Exit(1) 
+    not_mng = get_notes_manager()
+    res = not_mng.delete(title, id)
+    
 
 @app.command("update")
 def update_note(title: str | None = typer.Option(None, '--title', help='Update by name'),

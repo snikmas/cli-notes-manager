@@ -17,6 +17,8 @@ The app that storing notes a JSON file and supports basic CLI commands
 ## Project Structure
 
 ## How It Works
+pytohn -m src init # init a db file
+python -m src add --title "title" --content "content" [--tags "tags"]
 
 ### CLI
 
